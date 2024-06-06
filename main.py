@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from login_router import auth_api_router
 
-
 app = FastAPI(debug=True)
 
 origins = [
@@ -26,6 +25,5 @@ app.add_middleware(
 
 app.include_router(auth_api_router)
 
-
 if __name__ == '__main__':
-    uvicorn.run(app,host="0.0.0.0", port=80)
+    uvicorn.run(app, host="0.0.0.0", port=80)
