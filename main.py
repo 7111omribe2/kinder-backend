@@ -1,12 +1,10 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from login_router import auth_api_router
 
 
 app = FastAPI(debug=True)
-FastAPIInstrumentor.instrument_app(app)
 
 origins = [
     "http://localhost.proxyman.io:8002/",
