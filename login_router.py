@@ -1,6 +1,10 @@
 import datetime as dt
+import json
+import deepl
 
+import requests
 from fastapi import APIRouter
+from pydantic import BaseModel
 from shapely.geometry import Point
 
 users = [
@@ -93,3 +97,59 @@ async def regular_login_for_access_token(user_name: str):
     optional_users.sort(key=sort_users)
     optional_users = [get_user(opt) for opt in optional_users]
     return optional_users[:5]
+
+
+class RightsBot(BaseModel):
+    text: str
+
+
+# Print the translated text
+
+
+@auth_api_router.get("/rightsBot")
+async def get_answer(modal: RightsBot):
+    text = modal.text
+    chat_answer = await get_chat_answer(text)
+    hebrew_text = await translate_text(chat_answer)
+    return {'chat_answer': hebrew_text}
+
+
+async def translate_text(chat_answer):
+    return """
+    אני כל כך מצטער לשמוע על האבחנה שלך.
+
+כבן משפחה של חולה סרטן, ייתכן שתרצה לשקול לנקוט בצעדים כדי להבטיח שזכויות החולה מוגנות. בדרך כלל מומלץ להתחיל את התהליך במוקדם ולא במאוחר, שכן לחלק מהיתרונות והשירותים עשויים להיות מגבלות זמן או לדרוש תכנון מוקדם.
+
+בישראל קיימים מספר ארגונים ומשאבים לתמיכה בחולי סרטן ובני משפחתם. כמה דוגמאות כוללות:
+
+* האגודה הישראלית למלחמה בסרטן (ICA): מציעה תמיכה רגשית, סיוע כלכלי והכוונה בניווט במערכת הבריאות.
+* משרד הבריאות: מספק מידע על תוכניות במימון ממשלתי, כגון כיסוי תרופות ושירותי טיפול ביתי.
+* המוסד לביטוח לאומי (ביטוח לאומי): מעניק תמיכה כספית לחולי סרטן ובני משפחותיהם.
+
+זה רעיון טוב לפנות לארגונים אלה או לצוות הבריאות של המטופל שלך כדי לקבל הבנה טובה יותר של הזכויות והמשאבים הספציפיים הזמינים.
+    """
+    auth_key = "61958d07-900f-406f-b135-9fd60ca75c10:fx"  # Replace with your key
+    translator = deepl.Translator(auth_key)
+    result = translator.translate_text(chat_answer, target_lang="he")
+    hebrew_text = result.text
+    return hebrew_text
+
+
+async def get_chat_answer(text):
+    url = "http://localhost:11434/api/chat"
+    modal_name = "example"
+    payload = {
+        "model": modal_name,
+        "messages": [
+            {"role": "user", "content": text}
+        ]
+    }
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response_lines = [json.loads(line.strip()) for line in response.text.split('\n') if line.strip()]
+    chat_answer = ""
+    for word_dict in response_lines:
+        if word_dict['done'] is True:
+            break
+        chat_answer += word_dict['message']['content']
+    return chat_answer
